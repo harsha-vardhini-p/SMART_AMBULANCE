@@ -1,0 +1,119 @@
+package com.lifegrid.domain;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.util.Objects;
+
+/**
+ * Represents an emergency response ambulance vehicle stationed or moving in the network.
+ */
+@Entity
+@Table(name = "ambulances")
+public class Ambulance {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "call_sign", nullable = false, unique = true, length = 50)
+    private String callSign;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private AmbulanceType type;
+
+    @Column(name = "current_node_id", nullable = false)
+    private Long currentNodeId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private AmbulanceStatus status = AmbulanceStatus.AVAILABLE;
+
+    public Ambulance() {
+    }
+
+    public Ambulance(String callSign, AmbulanceType type, Long currentNodeId, AmbulanceStatus status) {
+        this.callSign = callSign;
+        this.type = type;
+        this.currentNodeId = currentNodeId;
+        this.status = status;
+    }
+
+    public Ambulance(Long id, String callSign, AmbulanceType type, Long currentNodeId, AmbulanceStatus status) {
+        this.id = id;
+        this.callSign = callSign;
+        this.type = type;
+        this.currentNodeId = currentNodeId;
+        this.status = status;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getCallSign() {
+        return callSign;
+    }
+
+    public void setCallSign(String callSign) {
+        this.callSign = callSign;
+    }
+
+    public AmbulanceType getType() {
+        return type;
+    }
+
+    public void setType(AmbulanceType type) {
+        this.type = type;
+    }
+
+    public Long getCurrentNodeId() {
+        return currentNodeId;
+    }
+
+    public void setCurrentNodeId(Long currentNodeId) {
+        this.currentNodeId = currentNodeId;
+    }
+
+    public AmbulanceStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(AmbulanceStatus status) {
+        this.status = status;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Ambulance ambulance = (Ambulance) o;
+        return Objects.equals(id, ambulance.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return "Ambulance{" +
+                "id=" + id +
+                ", callSign='" + callSign + '\'' +
+                ", type=" + type +
+                ", currentNodeId=" + currentNodeId +
+                ", status=" + status +
+                '}';
+    }
+}

@@ -1,0 +1,17 @@
+com/lifegrid/domain/EmergencyStatus.class
+com/lifegrid/domain/Node.class
+com/lifegrid/domain/Road.class
+com/lifegrid/domain/DispatchLog.class
+com/lifegrid/LifeGridApplication.class
+com/lifegrid/repository/RoadRepository.class
+com/lifegrid/config/DataSeeder.class
+com/lifegrid/domain/AmbulanceType.class
+com/lifegrid/domain/Ambulance.class
+com/lifegrid/domain/AmbulanceStatus.class
+com/lifegrid/domain/Emergency.class
+com/lifegrid/repository/DispatchLogRepository.class
+com/lifegrid/repository/EmergencyRepository.class
+com/lifegrid/domain/Hospital.class
+com/lifegrid/repository/NodeRepository.class
+com/lifegrid/repository/HospitalRepository.class
+com/lifegrid/repository/AmbulanceRepository.class
