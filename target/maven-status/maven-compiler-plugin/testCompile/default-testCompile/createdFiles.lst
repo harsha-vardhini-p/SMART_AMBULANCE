@@ -1,3 +1,4 @@
 com/lifegrid/LifeGridApplicationTests.class
 com/lifegrid/service/DispatchServiceTest.class
+com/lifegrid/controller/LifeGridApiControllerTest.class
 com/lifegrid/core/DijkstraRouterTest.class

@@ -7,6 +7,8 @@ import com.lifegrid.domain.Hospital;
 import com.lifegrid.domain.Node;
 import com.lifegrid.domain.Road;
 import com.lifegrid.repository.AmbulanceRepository;
+import com.lifegrid.repository.DispatchLogRepository;
+import com.lifegrid.repository.EmergencyRepository;
 import com.lifegrid.repository.HospitalRepository;
 import com.lifegrid.repository.NodeRepository;
 import com.lifegrid.repository.RoadRepository;
@@ -34,15 +36,21 @@ public class DataSeeder implements CommandLineRunner {
     private final RoadRepository roadRepository;
     private final HospitalRepository hospitalRepository;
     private final AmbulanceRepository ambulanceRepository;
+    private final EmergencyRepository emergencyRepository;
+    private final DispatchLogRepository dispatchLogRepository;
 
     public DataSeeder(NodeRepository nodeRepository,
                       RoadRepository roadRepository,
                       HospitalRepository hospitalRepository,
-                      AmbulanceRepository ambulanceRepository) {
+                      AmbulanceRepository ambulanceRepository,
+                      EmergencyRepository emergencyRepository,
+                      DispatchLogRepository dispatchLogRepository) {
         this.nodeRepository = nodeRepository;
         this.roadRepository = roadRepository;
         this.hospitalRepository = hospitalRepository;
         this.ambulanceRepository = ambulanceRepository;
+        this.emergencyRepository = emergencyRepository;
+        this.dispatchLogRepository = dispatchLogRepository;
     }
 
     @Override
@@ -52,7 +60,39 @@ public class DataSeeder implements CommandLineRunner {
             log.info("LifeGrid database already contains data ({} nodes). Skipping initial seed.", nodeRepository.count());
             return;
         }
+        seedFresh();
+    }
 
+    /**
+     * Resets all tables, flushes deletions, and reseeds pristine simulation state.
+     */
+    @Transactional
+    public synchronized void resetAndSeed() {
+        log.info("Purging all simulation data (dispatches, emergencies, fleet, network)...");
+        dispatchLogRepository.deleteAll();
+        dispatchLogRepository.flush();
+
+        emergencyRepository.deleteAll();
+        emergencyRepository.flush();
+
+        roadRepository.deleteAll();
+        roadRepository.flush();
+
+        ambulanceRepository.deleteAll();
+        ambulanceRepository.flush();
+
+        hospitalRepository.deleteAll();
+        hospitalRepository.flush();
+
+        nodeRepository.deleteAll();
+        nodeRepository.flush();
+
+        seedFresh();
+        log.info("Simulation network successfully reset and reseeded.");
+    }
+
+    @Transactional
+    public void seedFresh() {
         log.info("Initializing LifeGrid simulation network with Vijayawada coordinates...");
 
         // 1. Seed 18 realistic intersections around Vijayawada, AP
@@ -77,9 +117,9 @@ public class DataSeeder implements CommandLineRunner {
         nodes.add(new Node("Gannavaram Airport Corridor", 12.8, 6.4, 16.5410, 80.7250));             // 18
 
         List<Node> savedNodes = nodeRepository.saveAll(nodes);
+        nodeRepository.flush();
         log.info("Seeded {} road network nodes.", savedNodes.size());
 
-        // Quick helper array (1-indexed mapping to savedNodes list)
         Node n1 = savedNodes.get(0);
         Node n2 = savedNodes.get(1);
         Node n3 = savedNodes.get(2);
@@ -127,53 +167,54 @@ public class DataSeeder implements CommandLineRunner {
         roads.add(new Road(n4, n10, 3.2, true));  // Besant Road <-> Gunadala Junction
 
         roadRepository.saveAll(roads);
+        roadRepository.flush();
         log.info("Seeded {} interconnected road corridors.", roads.size());
 
         // 3. Seed 4 Hospitals with specialized care units & beds
         List<Hospital> hospitals = Arrays.asList(
                 new Hospital(
                         "Government General Hospital (GGH)",
-                        n10.getId(), // At Gunadala Junction
+                        n10.getId(),
                         250,
                         45,
                         Set.of("TRAUMA", "CARDIAC", "GENERAL", "ICU", "PEDIATRIC")
                 ),
                 new Hospital(
                         "Ramesh Hospitals",
-                        n7.getId(), // At Benz Circle
+                        n7.getId(),
                         120,
                         18,
                         Set.of("CARDIAC", "TRAUMA", "ICU", "GENERAL")
                 ),
                 new Hospital(
                         "Manipal Hospital",
-                        n6.getId(), // At Tadepalli Bypass
+                        n6.getId(),
                         180,
                         28,
                         Set.of("TRAUMA", "CARDIAC", "GENERAL", "ICU", "PEDIATRIC")
                 ),
                 new Hospital(
                         "Andhra Hospitals",
-                        n3.getId(), // At Governorpet Center
+                        n3.getId(),
                         90,
                         12,
                         Set.of("GENERAL", "PEDIATRIC", "ICU")
                 )
         );
         hospitalRepository.saveAll(hospitals);
+        hospitalRepository.flush();
         log.info("Seeded {} hospitals across Vijayawada.", hospitals.size());
 
         // 4. Seed 5 Ambulances placed at strategic network locations
         List<Ambulance> ambulances = Arrays.asList(
-                new Ambulance("AMB-01", AmbulanceType.ADVANCED, n7.getId(), AmbulanceStatus.AVAILABLE),  // Benz Circle
-                new Ambulance("AMB-02", AmbulanceType.BASIC, n2.getId(), AmbulanceStatus.AVAILABLE),     // Railway Station
-                new Ambulance("AMB-03", AmbulanceType.ADVANCED, n10.getId(), AmbulanceStatus.AVAILABLE), // Gunadala / GGH
-                new Ambulance("AMB-04", AmbulanceType.BASIC, n6.getId(), AmbulanceStatus.AVAILABLE),     // Tadepalli Bypass
-                new Ambulance("AMB-05", AmbulanceType.ADVANCED, n9.getId(), AmbulanceStatus.AVAILABLE)   // Ramavarappadu Ring
+                new Ambulance("AMB-01", AmbulanceType.ADVANCED, n7.getId(), AmbulanceStatus.AVAILABLE),
+                new Ambulance("AMB-02", AmbulanceType.BASIC, n2.getId(), AmbulanceStatus.AVAILABLE),
+                new Ambulance("AMB-03", AmbulanceType.ADVANCED, n10.getId(), AmbulanceStatus.AVAILABLE),
+                new Ambulance("AMB-04", AmbulanceType.BASIC, n6.getId(), AmbulanceStatus.AVAILABLE),
+                new Ambulance("AMB-05", AmbulanceType.ADVANCED, n9.getId(), AmbulanceStatus.AVAILABLE)
         );
         ambulanceRepository.saveAll(ambulances);
+        ambulanceRepository.flush();
         log.info("Seeded {} ambulances on standby.", ambulances.size());
-
-        log.info("LifeGrid initial simulation seed completed successfully.");
     }
 }
