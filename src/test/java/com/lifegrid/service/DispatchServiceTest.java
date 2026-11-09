@@ -45,11 +45,23 @@ class DispatchServiceTest {
     @Autowired
     private DispatchLogRepository dispatchLogRepository;
 
+    @Autowired
+    private com.lifegrid.repository.NodeRepository nodeRepository;
+
+    @Autowired
+    private NetworkService networkService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        networkService.resetSimulation();
+    }
+
     @Test
     @DisplayName("dispatchEmergency successfully allocates resources and persists state transitions")
     void testDispatchEmergencySuccess() {
+        Long node4 = nodeRepository.findAll().get(3).getId();
         // Create emergency at Besant Road (Node 4)
-        Emergency emergency = new Emergency("Severe Chest Pain", 9, 4L);
+        Emergency emergency = new Emergency("Severe Chest Pain", 9, node4);
         emergency = emergencyRepository.save(emergency);
 
         Hospital initialHospital = hospitalRepository.findAll().stream()
@@ -97,11 +109,15 @@ class DispatchServiceTest {
         // Clean any existing pending emergencies
         emergencyRepository.deleteAll();
 
-        Emergency lowPriority = new Emergency("Minor Sprain", 2, 1L);
+        List<com.lifegrid.domain.Node> nodes = nodeRepository.findAll();
+        Long node1 = nodes.get(0).getId();
+        Long node5 = nodes.get(4).getId();
+
+        Emergency lowPriority = new Emergency("Minor Sprain", 2, node1);
         lowPriority.setReportedAt(LocalDateTime.now().minusMinutes(20));
         emergencyRepository.save(lowPriority);
 
-        Emergency highPriority = new Emergency("Severe Trauma Accident", 10, 5L);
+        Emergency highPriority = new Emergency("Severe Trauma Accident", 10, node5);
         highPriority.setReportedAt(LocalDateTime.now().minusMinutes(5));
         emergencyRepository.save(highPriority);
 
@@ -115,7 +131,8 @@ class DispatchServiceTest {
     @Test
     @DisplayName("completeEmergency transitions status to COMPLETED and frees ambulance at hospital")
     void testCompleteEmergency() {
-        Emergency emergency = new Emergency("Respiratory Distress", 7, 2L);
+        Long node2 = nodeRepository.findAll().get(1).getId();
+        Emergency emergency = new Emergency("Respiratory Distress", 7, node2);
         emergency = emergencyRepository.save(emergency);
 
         DispatchResponseDto dispatchResponse = dispatchService.dispatchEmergency(emergency.getId());

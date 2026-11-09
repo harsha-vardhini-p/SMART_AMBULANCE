@@ -35,6 +35,15 @@ public class Ambulance {
     @Column(nullable = false, length = 20)
     private AmbulanceStatus status = AmbulanceStatus.AVAILABLE;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
+    @Column(name = "progress")
+    private Double progress = 0.0;
+
     public Ambulance() {
     }
 
@@ -43,6 +52,7 @@ public class Ambulance {
         this.type = type;
         this.currentNodeId = currentNodeId;
         this.status = status;
+        this.progress = 0.0;
     }
 
     public Ambulance(Long id, String callSign, AmbulanceType type, Long currentNodeId, AmbulanceStatus status) {
@@ -51,6 +61,18 @@ public class Ambulance {
         this.type = type;
         this.currentNodeId = currentNodeId;
         this.status = status;
+        this.progress = 0.0;
+    }
+
+    public Ambulance(Long id, String callSign, AmbulanceType type, Long currentNodeId, AmbulanceStatus status, Double latitude, Double longitude) {
+        this.id = id;
+        this.callSign = callSign;
+        this.type = type;
+        this.currentNodeId = currentNodeId;
+        this.status = status;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.progress = 0.0;
     }
 
     public Long getId() {
@@ -93,6 +115,30 @@ public class Ambulance {
         this.status = status;
     }
 
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
+    public Double getProgress() {
+        return progress != null ? progress : 0.0;
+    }
+
+    public void setProgress(Double progress) {
+        this.progress = progress != null ? Math.round(progress * 100.0) / 100.0 : 0.0;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -114,6 +160,9 @@ public class Ambulance {
                 ", type=" + type +
                 ", currentNodeId=" + currentNodeId +
                 ", status=" + status +
+                ", lat=" + latitude +
+                ", lon=" + longitude +
+                ", progress=" + progress + "%" +
                 '}';
     }
 }

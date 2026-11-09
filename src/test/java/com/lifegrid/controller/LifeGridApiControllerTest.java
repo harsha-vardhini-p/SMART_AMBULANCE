@@ -31,10 +31,22 @@ class LifeGridApiControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private com.lifegrid.repository.NodeRepository nodeRepository;
+
+    @Autowired
+    private com.lifegrid.service.NetworkService networkService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        networkService.resetSimulation();
+    }
+
     @Test
     @DisplayName("POST /api/emergencies creates ticket and triggers immediate dispatch")
     void testCreateEmergencyAndDispatch() throws Exception {
-        CreateEmergencyRequestDto request = new CreateEmergencyRequestDto("CARDIAC_ARREST", 9, 3L);
+        Long locationId = nodeRepository.findAll().get(2).getId();
+        CreateEmergencyRequestDto request = new CreateEmergencyRequestDto("CARDIAC_ARREST", 9, locationId);
 
         mockMvc.perform(post("/api/emergencies")
                         .contentType(MediaType.APPLICATION_JSON)

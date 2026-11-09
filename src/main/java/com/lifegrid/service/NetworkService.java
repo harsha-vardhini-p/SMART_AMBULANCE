@@ -40,6 +40,7 @@ public class NetworkService {
     private final AmbulanceRepository ambulanceRepository;
     private final EmergencyRepository emergencyRepository;
     private final DispatchLogRepository dispatchLogRepository;
+    private final SimulationService simulationService;
     private final DataSeeder dataSeeder;
 
     public NetworkService(NodeRepository nodeRepository,
@@ -48,6 +49,7 @@ public class NetworkService {
                           AmbulanceRepository ambulanceRepository,
                           EmergencyRepository emergencyRepository,
                           DispatchLogRepository dispatchLogRepository,
+                          SimulationService simulationService,
                           DataSeeder dataSeeder) {
         this.nodeRepository = nodeRepository;
         this.roadRepository = roadRepository;
@@ -55,6 +57,7 @@ public class NetworkService {
         this.ambulanceRepository = ambulanceRepository;
         this.emergencyRepository = emergencyRepository;
         this.dispatchLogRepository = dispatchLogRepository;
+        this.simulationService = simulationService;
         this.dataSeeder = dataSeeder;
     }
 
@@ -129,6 +132,7 @@ public class NetworkService {
     @Transactional
     public void resetSimulation() {
         log.info("Resetting entire LifeGrid simulation network to initial state...");
+        simulationService.cancelAllMissions();
         dataSeeder.resetAndSeed();
     }
 }

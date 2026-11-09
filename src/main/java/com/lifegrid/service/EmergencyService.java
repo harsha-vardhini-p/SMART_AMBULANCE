@@ -1,5 +1,7 @@
 package com.lifegrid.service;
 
+import com.lifegrid.core.HospitalFullException;
+import com.lifegrid.core.NoAmbulanceAvailableException;
 import com.lifegrid.domain.Emergency;
 import com.lifegrid.dto.CreateEmergencyRequestDto;
 import com.lifegrid.dto.DispatchResponseDto;
@@ -36,12 +38,13 @@ public class EmergencyService {
 
     /**
      * Ingests a new emergency incident, validates location, saves ticket,
-     * and immediately invokes automated dispatch routing.
+     * and attempts immediate automated dispatch. If all candidate ambulances/beds
+     * are busy, the ticket remains PENDING to be dequeued as soon as a unit frees up.
      *
      * @param request intake payload
-     * @return {@link EmergencyResponseDto} with immediate assignment and route details
+     * @return {@link EmergencyResponseDto} with immediate assignment or queued PENDING status
      */
-    @Transactional
+    @Transactional(noRollbackFor = {NoAmbulanceAvailableException.class, HospitalFullException.class})
     public EmergencyResponseDto createAndDispatch(CreateEmergencyRequestDto request) {
         log.info("Reporting new emergency: Type={}, Severity={}, NodeId={}",
                 request.getType(), request.getSeverity(), request.getLocationNodeId());
@@ -55,11 +58,15 @@ public class EmergencyService {
         emergency = emergencyRepository.save(emergency);
 
         // 2. Trigger automated triage and dispatch
-        DispatchResponseDto dispatchDetails = dispatchService.dispatchEmergency(emergency.getId());
-
-        // 3. Reload latest emergency state
-        Emergency updated = emergencyRepository.findById(emergency.getId()).orElse(emergency);
-        return EmergencyResponseDto.fromEntityWithDispatch(updated, dispatchDetails);
+        try {
+            DispatchResponseDto dispatchDetails = dispatchService.dispatchEmergency(emergency.getId());
+            Emergency updated = emergencyRepository.findById(emergency.getId()).orElse(emergency);
+            return EmergencyResponseDto.fromEntityWithDispatch(updated, dispatchDetails);
+        } catch (NoAmbulanceAvailableException | HospitalFullException ex) {
+            log.warn("Emergency #{} queued in PENDING status due to fleet/bed constraints: {}",
+                    emergency.getId(), ex.getMessage());
+            return EmergencyResponseDto.fromEntity(emergency);
+        }
     }
 
     @Transactional(readOnly = true)

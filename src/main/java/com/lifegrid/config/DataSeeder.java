@@ -207,11 +207,11 @@ public class DataSeeder implements CommandLineRunner {
 
         // 4. Seed 5 Ambulances placed at strategic network locations
         List<Ambulance> ambulances = Arrays.asList(
-                new Ambulance("AMB-01", AmbulanceType.ADVANCED, n7.getId(), AmbulanceStatus.AVAILABLE),
-                new Ambulance("AMB-02", AmbulanceType.BASIC, n2.getId(), AmbulanceStatus.AVAILABLE),
-                new Ambulance("AMB-03", AmbulanceType.ADVANCED, n10.getId(), AmbulanceStatus.AVAILABLE),
-                new Ambulance("AMB-04", AmbulanceType.BASIC, n6.getId(), AmbulanceStatus.AVAILABLE),
-                new Ambulance("AMB-05", AmbulanceType.ADVANCED, n9.getId(), AmbulanceStatus.AVAILABLE)
+                new Ambulance(null, "AMB-01", AmbulanceType.ADVANCED, n7.getId(), AmbulanceStatus.AVAILABLE, n7.getLatitude(), n7.getLongitude()),
+                new Ambulance(null, "AMB-02", AmbulanceType.BASIC, n2.getId(), AmbulanceStatus.AVAILABLE, n2.getLatitude(), n2.getLongitude()),
+                new Ambulance(null, "AMB-03", AmbulanceType.ADVANCED, n10.getId(), AmbulanceStatus.AVAILABLE, n10.getLatitude(), n10.getLongitude()),
+                new Ambulance(null, "AMB-04", AmbulanceType.BASIC, n6.getId(), AmbulanceStatus.AVAILABLE, n6.getLatitude(), n6.getLongitude()),
+                new Ambulance(null, "AMB-05", AmbulanceType.ADVANCED, n9.getId(), AmbulanceStatus.AVAILABLE, n9.getLatitude(), n9.getLongitude())
         );
         ambulanceRepository.saveAll(ambulances);
         ambulanceRepository.flush();
