@@ -1,38 +1,28 @@
-/**
- * LifeGrid — API Client Module
- * Handles all REST API communication with the Spring Boot backend.
- *
- * This file will be populated with fetch wrappers in the next step.
- * For now it exports endpoint constants and function stubs.
- */
-
-// ── Base URL ────────────────────────────────────────────────
-const API_BASE = '';  // same origin, no prefix needed
-
-// ── Endpoint Constants ──────────────────────────────────────
-const API = Object.freeze({
-  EMERGENCIES:      '/api/emergencies',
-  AMBULANCES:       '/api/ambulances',
-  HOSPITALS:        '/api/hospitals',
-  NODES:            '/api/nodes',
-  ROADS:            '/api/roads',
-  DISPATCHES:       '/api/dispatches',
-  REPORT_SUMMARY:   '/api/reports/summary',
-  SIMULATION_RESET: '/api/simulation/reset',
+async function req(path, opts) {
+  const res = await fetch(path, opts);
+  let body = null;
+  try { body = await res.json(); } catch (e) { /* empty body */ }
+  if (!res.ok) {
+    const msg = (body && (body.message || body.error || JSON.stringify(body))) || ('HTTP ' + res.status);
+    throw new Error(msg);
+  }
+  return body;
+}
+const get = (p) => req(p);
+const post = (p, data) => req(p, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: data ? JSON.stringify(data) : undefined,
 });
 
-// ── Generic Fetch Wrapper (stub) ────────────────────────────
-// async function apiFetch(endpoint, options = {}) { ... }
-
-// ── Endpoint Functions (stubs) ──────────────────────────────
-// async function createEmergency(data) { ... }
-// async function fetchEmergencies() { ... }
-// async function fetchAmbulances() { ... }
-// async function fetchHospitals() { ... }
-// async function fetchNodes() { ... }
-// async function fetchRoads() { ... }
-// async function fetchDispatches() { ... }
-// async function fetchSummaryReport() { ... }
-// async function resetSimulation() { ... }
-
-console.log('[LifeGrid] api.js loaded — endpoints ready');
+export const api = {
+  nodes: () => get('/api/nodes'),
+  roads: () => get('/api/roads'),
+  ambulances: () => get('/api/ambulances'),
+  hospitals: () => get('/api/hospitals'),
+  emergencies: () => get('/api/emergencies'),
+  dispatches: () => get('/api/dispatches').catch(() => []),
+  summary: () => get('/api/reports/summary').catch(() => null),
+  createEmergency: (d) => post('/api/emergencies', d),
+  reset: () => post('/api/simulation/reset'),
+};
