@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LifeGrid — Smart Ambulance Dispatch</title>
+
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ════════════════════════════════════════════════════════
+       APP LAYOUT
+       ════════════════════════════════════════════════════════ -->
+  <div class="app-layout" role="application" aria-label="LifeGrid Ambulance Dispatch System">
+
+    <!-- ── TOP BAR ─────────────────────────────────────────── -->
+    <header class="topbar" role="banner">
+      <div class="topbar__brand">
+        <div class="topbar__logo" aria-hidden="true">
+          <div class="topbar__logo-icon">🚑</div>
+          <h1 class="topbar__title">Life<span>Grid</span></h1>
+        </div>
+      </div>
+
+      <div class="topbar__right">
+        <div class="topbar__status" aria-live="polite">
+          <span class="pulse" aria-hidden="true"></span>
+          <span id="system-status">System Active</span>
+        </div>
+        <div class="badge-disclaimer" role="alert">
+          <span class="badge-disclaimer__icon" aria-hidden="true">⚠</span>
+          SIMULATION — Not for real emergency use
+        </div>
+      </div>
+    </header>
+
+
+    <!-- ── LEFT SIDEBAR ────────────────────────────────────── -->
+    <aside class="sidebar" role="complementary" aria-label="Emergency controls">
+
+      <!-- Emergency Report Form -->
+      <section aria-labelledby="form-heading">
+        <div class="section-header">
+          <h2 class="section-header__title" id="form-heading">Report Emergency</h2>
+        </div>
+
+        <form id="emergency-form" class="card" aria-label="Report a new emergency" novalidate>
+          <div class="card__body">
+
+            <!-- Emergency Type -->
+            <div class="form-group">
+              <label class="form-label" for="emergency-type">Type</label>
+              <select class="form-select" id="emergency-type" required aria-required="true">
+                <option value="">Select type…</option>
+                <option value="CARDIAC">🫀 Cardiac Arrest</option>
+                <option value="TRAUMA">🩹 Trauma / Accident</option>
+                <option value="RESPIRATORY">🫁 Respiratory</option>
+                <option value="STROKE">🧠 Stroke</option>
+                <option value="BURN">🔥 Burns</option>
+                <option value="GENERAL">🏥 General</option>
+              </select>
+            </div>
+
+            <!-- Severity -->
+            <div class="form-group">
+              <label class="form-label" for="severity-slider">Severity</label>
+              <div class="severity-input">
+                <input type="range" id="severity-slider" class="severity-input__slider"
+                       min="1" max="10" value="5"
+                       aria-label="Emergency severity level"
+                       aria-valuemin="1" aria-valuemax="10" aria-valuenow="5" />
+                <div class="severity-input__value text-warning" id="severity-display">5</div>
+              </div>
+            </div>
+
+            <!-- Location -->
+            <div class="form-group">
+              <label class="form-label" for="location-node">Location</label>
+              <select class="form-select" id="location-node" required aria-required="true">
+                <option value="">Select location…</option>
+                <!-- Populated dynamically -->
+                <option value="1">Benz Circle</option>
+                <option value="2">Vijayawada Junction</option>
+                <option value="3">PNBS (Pandit Nehru Bus Station)</option>
+                <option value="4">Kanuru</option>
+                <option value="5">Labbipet</option>
+                <option value="6">Governorpet</option>
+                <option value="7">Machavaram</option>
+                <option value="8">Patamata</option>
+                <option value="9">Gunadala</option>
+                <option value="10">Moghalrajpuram</option>
+                <option value="11">Auto Nagar</option>
+                <option value="12">Ajit Singh Nagar</option>
+                <option value="13">Tadepalli</option>
+                <option value="14">Singh Nagar</option>
+                <option value="15">Krishnalanka</option>
+                <option value="16">Gollapudi</option>
+                <option value="17">Poranki</option>
+                <option value="18">Gannavaram</option>
+              </select>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="btn btn--critical btn--block" id="dispatch-btn">
+              🚨 Dispatch Emergency
+            </button>
+
+          </div>
+        </form>
+      </section>
+
+      <!-- Quick Scenarios -->
+      <section aria-labelledby="scenarios-heading">
+        <div class="section-header">
+          <h2 class="section-header__title" id="scenarios-heading">Quick Scenarios</h2>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:var(--sp-2);" id="scenario-list">
+          <button class="btn btn--scenario" data-type="CARDIAC" data-severity="9" data-node="1"
+                  aria-label="Quick scenario: Cardiac emergency at Benz Circle">
+            <span class="scenario-icon">🫀</span>
+            <div>
+              <div class="scenario-label">Cardiac at Benz Circle</div>
+              <div class="scenario-desc">Severity 9 — ADVANCED ambulance</div>
+            </div>
+          </button>
+
+          <button class="btn btn--scenario" data-type="TRAUMA" data-severity="7" data-node="3"
+                  aria-label="Quick scenario: Trauma at PNBS">
+            <span class="scenario-icon">🩹</span>
+            <div>
+              <div class="scenario-label">Trauma at PNBS</div>
+              <div class="scenario-desc">Severity 7 — Road accident</div>
+            </div>
+          </button>
+
+          <button class="btn btn--scenario" data-type="RESPIRATORY" data-severity="6" data-node="9"
+                  aria-label="Quick scenario: Respiratory at Gunadala">
+            <span class="scenario-icon">🫁</span>
+            <div>
+              <div class="scenario-label">Respiratory at Gunadala</div>
+              <div class="scenario-desc">Severity 6 — Breathing difficulty</div>
+            </div>
+          </button>
+
+          <button class="btn btn--scenario" data-type="STROKE" data-severity="10" data-node="15"
+                  aria-label="Quick scenario: Stroke at Krishnalanka">
+            <span class="scenario-icon">🧠</span>
+            <div>
+              <div class="scenario-label">Stroke at Krishnalanka</div>
+              <div class="scenario-desc">Severity 10 — Critical, ADVANCED</div>
+            </div>
+          </button>
+
+          <button class="btn btn--scenario" data-type="BURN" data-severity="5" data-node="11"
+                  aria-label="Quick scenario: Burns at Auto Nagar">
+            <span class="scenario-icon">🔥</span>
+            <div>
+              <div class="scenario-label">Burns at Auto Nagar</div>
+              <div class="scenario-desc">Severity 5 — Industrial area</div>
+            </div>
+          </button>
+        </div>
+      </section>
+
+      <!-- Simulation Controls -->
+      <section aria-labelledby="sim-heading">
+        <div class="section-header">
+          <h2 class="section-header__title" id="sim-heading">Simulation</h2>
+        </div>
+        <button class="btn btn--ghost btn--block btn--sm" id="reset-btn" aria-label="Reset simulation data">
+          ↻ Reset Simulation
+        </button>
+      </section>
+
+    </aside>
+
+
+    <!-- ── CENTRE MAP ──────────────────────────────────────── -->
+    <main class="map-area" role="main" aria-label="City map view">
+
+      <!-- Overlay stats -->
+      <div class="map-overlay" aria-label="Map statistics">
+        <div class="map-stat">
+          <span style="color:var(--success)">●</span>
+          <span id="stat-available">5 Available</span>
+        </div>
+        <div class="map-stat">
+          <span style="color:var(--critical)">●</span>
+          <span id="stat-active">0 Active</span>
+        </div>
+        <div class="map-stat">
+          <span style="color:var(--warning)">●</span>
+          <span id="stat-pending">0 Pending</span>
+        </div>
+      </div>
+
+      <!-- Map container (Leaflet will mount here) -->
+      <div id="map" role="img" aria-label="Interactive dispatch map of Vijayawada">
+        <div class="map-placeholder" id="map-placeholder">
+          <div class="map-placeholder__icon">🗺️</div>
+          <div class="map-placeholder__text">Map Loading…</div>
+          <div class="text-sm text-muted">Vijayawada road network</div>
+        </div>
+      </div>
+
+    </main>
+
+
+    <!-- ── RIGHT PANEL ─────────────────────────────────────── -->
+    <aside class="panel" role="complementary" aria-label="Fleet and hospital status">
+
+      <!-- Ambulance Fleet -->
+      <section aria-labelledby="fleet-heading">
+        <div class="section-header">
+          <h2 class="section-header__title" id="fleet-heading">Ambulance Fleet</h2>
+          <span class="section-header__count" id="fleet-count">5</span>
+        </div>
+
+        <div id="ambulance-list" style="display:flex; flex-direction:column; gap:var(--sp-2);">
+
+          <!-- Placeholder ambulance cards -->
+          <div class="card" aria-label="Ambulance VJA-01">
+            <div class="card__header">
+              <span class="card__title">🚑 VJA-01</span>
+              <span class="badge badge--available">AVAILABLE</span>
+            </div>
+            <div class="card__body">
+              <div class="card__meta">
+                <span class="badge badge--advanced">ADVANCED</span>
+                <span>📍 Benz Circle</span>
+              </div>
+              <div class="progress" aria-label="Mission progress">
+                <div class="progress__bar" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" aria-label="Ambulance VJA-02">
+            <div class="card__header">
+              <span class="card__title">🚑 VJA-02</span>
+              <span class="badge badge--dispatched">DISPATCHED</span>
+            </div>
+            <div class="card__body">
+              <div class="card__meta">
+                <span class="badge badge--basic">BASIC</span>
+                <span>📍 En route to Kanuru</span>
+              </div>
+              <div class="progress" aria-label="Mission progress">
+                <div class="progress__bar" style="width: 45%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" aria-label="Ambulance VJA-03">
+            <div class="card__header">
+              <span class="card__title">🚑 VJA-03</span>
+              <span class="badge badge--at-scene">AT SCENE</span>
+            </div>
+            <div class="card__body">
+              <div class="card__meta">
+                <span class="badge badge--advanced">ADVANCED</span>
+                <span>📍 PNBS</span>
+              </div>
+              <div class="progress" aria-label="Mission progress">
+                <div class="progress__bar progress__bar--warning" style="width: 65%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" aria-label="Ambulance VJA-04">
+            <div class="card__header">
+              <span class="card__title">🚑 VJA-04</span>
+              <span class="badge badge--to-hospital">TO HOSPITAL</span>
+            </div>
+            <div class="card__body">
+              <div class="card__meta">
+                <span class="badge badge--basic">BASIC</span>
+                <span>📍 → GGH Hospital</span>
+              </div>
+              <div class="progress" aria-label="Mission progress">
+                <div class="progress__bar progress__bar--critical" style="width: 85%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" aria-label="Ambulance VJA-05">
+            <div class="card__header">
+              <span class="card__title">🚑 VJA-05</span>
+              <span class="badge badge--available">AVAILABLE</span>
+            </div>
+            <div class="card__body">
+              <div class="card__meta">
+                <span class="badge badge--basic">BASIC</span>
+                <span>📍 Gollapudi</span>
+              </div>
+              <div class="progress" aria-label="Mission progress">
+                <div class="progress__bar" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Hospitals -->
+      <section aria-labelledby="hospitals-heading">
+        <div class="section-header">
+          <h2 class="section-header__title" id="hospitals-heading">Hospitals</h2>
+          <span class="section-header__count" id="hospital-count">4</span>
+        </div>
+
+        <div id="hospital-list" style="display:flex; flex-direction:column; gap:var(--sp-2);">
+
+          <!-- Placeholder hospital cards -->
+          <div class="card" aria-label="GGH Vijayawada hospital">
+            <div class="card__header">
+              <span class="card__title">🏥 GGH Vijayawada</span>
+            </div>
+            <div class="card__body">
+              <div class="bed-bar">
+                <span>Beds</span>
+                <div class="bed-bar__track">
+                  <div class="bed-bar__fill" style="width: 60%; background: var(--warning);"></div>
+                </div>
+                <span>30/50</span>
+              </div>
+              <div class="card__meta" style="flex-wrap:wrap; gap:4px;">
+                <span class="badge badge--facility">TRAUMA</span>
+                <span class="badge badge--facility">CARDIAC</span>
+                <span class="badge badge--facility">GENERAL</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" aria-label="Manipal Hospital">
+            <div class="card__header">
+              <span class="card__title">🏥 Manipal Hospital</span>
+            </div>
+            <div class="card__body">
+              <div class="bed-bar">
+                <span>Beds</span>
+                <div class="bed-bar__track">
+                  <div class="bed-bar__fill" style="width: 30%; background: var(--success);"></div>
+                </div>
+                <span>12/40</span>
+              </div>
+              <div class="card__meta" style="flex-wrap:wrap; gap:4px;">
+                <span class="badge badge--facility">CARDIAC</span>
+                <span class="badge badge--facility">GENERAL</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" aria-label="Andhra Hospital">
+            <div class="card__header">
+              <span class="card__title">🏥 Andhra Hospital</span>
+            </div>
+            <div class="card__body">
+              <div class="bed-bar">
+                <span>Beds</span>
+                <div class="bed-bar__track">
+                  <div class="bed-bar__fill" style="width: 85%; background: var(--critical);"></div>
+                </div>
+                <span>34/40</span>
+              </div>
+              <div class="card__meta" style="flex-wrap:wrap; gap:4px;">
+                <span class="badge badge--facility">TRAUMA</span>
+                <span class="badge badge--facility">GENERAL</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" aria-label="Sunrise Hospital">
+            <div class="card__header">
+              <span class="card__title">🏥 Sunrise Hospital</span>
+            </div>
+            <div class="card__body">
+              <div class="bed-bar">
+                <span>Beds</span>
+                <div class="bed-bar__track">
+                  <div class="bed-bar__fill" style="width: 50%; background: var(--success);"></div>
+                </div>
+                <span>15/30</span>
+              </div>
+              <div class="card__meta" style="flex-wrap:wrap; gap:4px;">
+                <span class="badge badge--facility">GENERAL</span>
+                <span class="badge badge--facility">CARDIAC</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </aside>
+
+
+    <!-- ── BOTTOM TABS ─────────────────────────────────────── -->
+    <section class="bottom" aria-label="Dispatch log and reports">
+
+      <!-- Tab headers -->
+      <div class="tabs" role="tablist" aria-label="Information panels">
+        <button class="tab tab--active" role="tab" aria-selected="true"
+                aria-controls="tab-dispatches" id="tab-btn-dispatches">
+          📋 Live Dispatch Log
+        </button>
+        <button class="tab" role="tab" aria-selected="false"
+                aria-controls="tab-reports" id="tab-btn-reports">
+          📊 Reports
+        </button>
+        <button class="tab" role="tab" aria-selected="false"
+                aria-controls="tab-emergencies" id="tab-btn-emergencies">
+          🚨 Emergencies
+        </button>
+      </div>
+
+      <!-- Tab panel: Dispatch Log -->
+      <div class="tab-panel tab-panel--active" role="tabpanel"
+           id="tab-dispatches" aria-labelledby="tab-btn-dispatches">
+        <div class="table-wrap">
+          <table class="table" aria-label="Dispatch log entries">
+            <thead>
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Time</th>
+                <th scope="col">Emergency</th>
+                <th scope="col">Ambulance</th>
+                <th scope="col">Hospital</th>
+                <th scope="col">Route</th>
+                <th scope="col">ETA (min)</th>
+              </tr>
+            </thead>
+            <tbody id="dispatch-table-body">
+              <!-- Placeholder rows -->
+              <tr>
+                <td>1</td>
+                <td>14:32:05</td>
+                <td><span class="badge badge--assigned">CARDIAC #1</span></td>
+                <td>VJA-01</td>
+                <td>GGH Vijayawada</td>
+                <td class="text-muted">N1 → N3 → N5 → N8</td>
+                <td><strong class="text-warning">4.2</strong></td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>14:33:18</td>
+                <td><span class="badge badge--assigned">TRAUMA #2</span></td>
+                <td>VJA-03</td>
+                <td>Andhra Hospital</td>
+                <td class="text-muted">N3 → N6 → N10</td>
+                <td><strong class="text-success">2.8</strong></td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>14:35:40</td>
+                <td><span class="badge badge--pending">GENERAL #3</span></td>
+                <td class="text-muted">—</td>
+                <td class="text-muted">—</td>
+                <td class="text-muted">—</td>
+                <td class="text-muted">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab panel: Reports -->
+      <div class="tab-panel" role="tabpanel"
+           id="tab-reports" aria-labelledby="tab-btn-reports">
+        <div class="stat-grid" id="report-stats">
+          <div class="stat-card">
+            <div class="stat-card__value text-primary" id="report-total">12</div>
+            <div class="stat-card__label">Total Dispatches</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__value text-warning" id="report-avg-time">3.5</div>
+            <div class="stat-card__label">Avg Response (min)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__value text-critical" id="report-unassigned">1</div>
+            <div class="stat-card__label">Unassigned</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__value text-accent" id="report-utilisation">62%</div>
+            <div class="stat-card__label">Bed Utilisation</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab panel: Emergencies -->
+      <div class="tab-panel" role="tabpanel"
+           id="tab-emergencies" aria-labelledby="tab-btn-emergencies">
+        <div class="table-wrap">
+          <table class="table" aria-label="Emergency records">
+            <thead>
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Type</th>
+                <th scope="col">Severity</th>
+                <th scope="col">Location</th>
+                <th scope="col">Status</th>
+                <th scope="col">Ambulance</th>
+                <th scope="col">Hospital</th>
+                <th scope="col">Reported At</th>
+              </tr>
+            </thead>
+            <tbody id="emergency-table-body">
+              <tr>
+                <td>1</td>
+                <td>CARDIAC</td>
+                <td><strong class="text-critical">9</strong></td>
+                <td>Benz Circle</td>
+                <td><span class="badge badge--assigned">ASSIGNED</span></td>
+                <td>VJA-01</td>
+                <td>GGH Vijayawada</td>
+                <td>14:32:05</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>TRAUMA</td>
+                <td><strong class="text-warning">7</strong></td>
+                <td>PNBS</td>
+                <td><span class="badge badge--completed">COMPLETED</span></td>
+                <td>VJA-03</td>
+                <td>Andhra Hospital</td>
+                <td>14:33:18</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </div><!-- /.app-layout -->
+
+
+  <!-- ── Toast Container ───────────────────────────────────── -->
+  <div class="toast-container" id="toast-container" role="status" aria-live="polite"></div>
+
+
+  <!-- ════════════════════════════════════════════════════════
+       SCRIPTS
+       ════════════════════════════════════════════════════════ -->
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- App modules -->
+  <script src="js/api.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
